@@ -311,41 +311,38 @@ class AssetGridViewController: UICollectionViewController {
         }
     }
 
-    // - TODO: Optimise Later with Time profiler
     func generateImage(completion: @escaping (UIImage) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
             let size = (arc4random_uniform(2) == 0) ? CGSize(width: 400, height: 300) : CGSize(width: 300, height: 400)
             
             let width: Int = Int(size.width)
             let height: Int = Int(size.height)
-            let totalPixels = width * height
+            let iterations = 100
             
             /// - NOTE: We can further optimise image generation by:
             ///         1. Generating colors only once and cache them to be reused across image generation
-            ///         3. Generate only 100 colors as we are randomising for 100 - so need of `totalPixels` colors
-            ///         Or simply generate store `hue` values only - as it is the only value changed
-            ///         3. Profile and check for alternate Image generation APIs
             
             /// - NOTE: Pre-filled and initialised array allows us to concurrently update each position without worring about thread safety
-            var colors: [UIColor] = Array(repeating: .clear, count: totalPixels)
+            var colors: [UIColor] = Array(repeating: .clear, count: 100)
             
             /// - NOTE: `concurrentPerform` internally takes care of scheduling work concurrently across available cores.
             ///         So we dont need to batch the work
-            DispatchQueue.concurrentPerform(iterations: totalPixels) { iteration in
+            DispatchQueue.concurrentPerform(iterations: iterations) { iteration in
                 colors[iteration] = UIColor(
-                    hue: CGFloat(arc4random_uniform(100)) / 100,
+                    hue: CGFloat(iteration) / CGFloat(iterations),
                     saturation: 1,
                     brightness: 1,
                     alpha: 1
                 )
             }
             
+            /// - NOTE: This still takes `>300ms`
+            // - TODO: Find way to optimise this further
             let renderer = UIGraphicsImageRenderer(size: size)
             let image = renderer.image { context in
                 (0..<width).forEach { x in
                     (0..<height).forEach { y in
-                        let index = width * y + x
-                        let newColor = colors[index]
+                        let newColor = colors.randomElement() ?? .black
                         newColor.setFill()
                         let newBounds = CGRect(x: x, y: y, width: 1, height: 1)
                         context.fill(newBounds)
