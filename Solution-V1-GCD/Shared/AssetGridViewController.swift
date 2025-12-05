@@ -111,7 +111,6 @@ extension AssetDataSource: PHPhotoLibraryChangeObserver {
 class AssetGridViewController: UICollectionViewController {
 
     var availableWidth: CGFloat = 0
-    var preload: CADisplayLink?
     var completionHandler: AssetGridViewControllerHandler?
     lazy var dataSource: AssetDataSource! = {
         AssetDataSource(controller: self)
@@ -138,8 +137,6 @@ class AssetGridViewController: UICollectionViewController {
         super.viewDidDisappear(animated)
         resetCachedAssets()
         dataSource = nil
-        preload?.invalidate()
-        preload = nil
     }
 
     deinit {
@@ -204,8 +201,17 @@ class AssetGridViewController: UICollectionViewController {
         super.viewDidAppear(animated)
         preloadIfNeeded()
 
-        preload = CADisplayLink(target: self, selector: #selector(iterateThroughVisibleRect))
-        preload?.add(to: .current, forMode: RunLoop.Mode.default)
+        /// - NOTE: This code was making `iterateThroughVisibleRect` to be executed every frame which is not needed
+        ///         This results in blocking main thread and increasing CPU load.
+        ///         Which in turn caused severe UI hangs
+        ///         We detected this with time profiler and resolved it.
+        ///
+        /// - Culprit code:
+        ///         `preload = CADisplayLink(target: self, selector: #selector(iterateThroughVisibleRect))`
+        ///         `preload?.add(to: .current, forMode: RunLoop.Mode.default)`
+        ///
+        ///         `iterateThroughVisibleRect` was also doing heavy computing work which was not necessary
+        ///
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -277,14 +283,6 @@ class AssetGridViewController: UICollectionViewController {
         dataSource.updateCache(addedRects: addedRects, removedRects: removedRects, targetSize: thumbnailSize, contentMode: .aspectFill)
         // Store the computed rectangle for future comparison.
         previousPreheatRect = preheatRect
-    }
-
-    @objc fileprivate func iterateThroughVisibleRect() {
-        for x in AssetGridViewMaximumPreloadSize {
-            for y in AssetGridViewMaximumPreloadSize {
-                self.preloadCache(contentOffset: .init(x: x, y: y))
-            }
-        }
     }
     
     fileprivate func differencesBetweenRects(_ old: CGRect, _ new: CGRect) -> (added: [CGRect], removed: [CGRect]) {
@@ -373,18 +371,6 @@ class AssetGridViewController: UICollectionViewController {
             }, completionHandler: {success, error in
                 if !success { print("Error creating the asset: \(String(describing: error))") }
             })
-        }
-    }
-
-
-    @objc func preloadCache(contentOffset: CGPoint) {
-        let nextVisibleRect = CGRect(origin: contentOffset, size: CGSize(width: 200, height: 200))
-        let currentVisibleRect = CGRect(origin: self.collectionView.contentOffset, size: self.collectionView.contentSize)
-
-        if currentVisibleRect.intersects(nextVisibleRect) {
-            DispatchQueue.main.async {
-                self.updateCachedAssets()
-            }
         }
     }
 }
