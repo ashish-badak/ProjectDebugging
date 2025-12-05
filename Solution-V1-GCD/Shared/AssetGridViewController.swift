@@ -313,45 +313,49 @@ class AssetGridViewController: UICollectionViewController {
         }
     }
 
-    func generateImage() -> UIImage {
-
-        let BATCH_SIZE = 100
-        var colors = [UIColor]()
-        let size = (arc4random_uniform(2) == 0) ? CGSize(width: 400, height: 300) : CGSize(width: 300, height: 400)
-
-        let width: Int = Int(size.width)
-        let height: Int = Int(size.height)
-
-        let group = DispatchGroup()
-        (0..<width).forEach { _ in
-            for y in stride(from: 0, to: height, by: BATCH_SIZE) {
-                group.enter()
-                DispatchQueue.global().async {
-                    let upperBound = y+BATCH_SIZE
-                    (y..<upperBound).forEach { _ in
-                        let newColor = UIColor(hue: CGFloat(arc4random_uniform(100)) / 100, saturation: 1, brightness: 1, alpha: 1)
-                        colors.append(newColor)
+    // - TODO: Optimise Later with Time profiler
+    func generateImage(completion: @escaping (UIImage) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let size = (arc4random_uniform(2) == 0) ? CGSize(width: 400, height: 300) : CGSize(width: 300, height: 400)
+            
+            let width: Int = Int(size.width)
+            let height: Int = Int(size.height)
+            let totalPixels = width * height
+            
+            /// - NOTE: We can further optimise image generation by:
+            ///         1. Generating colors only once and cache them to be reused across image generation
+            ///         3. Generate only 100 colors as we are randomising for 100 - so need of `totalPixels` colors
+            ///         Or simply generate store `hue` values only - as it is the only value changed
+            ///         3. Profile and check for alternate Image generation APIs
+            
+            /// - NOTE: Pre-filled and initialised array allows us to concurrently update each position without worring about thread safety
+            var colors: [UIColor] = Array(repeating: .clear, count: totalPixels)
+            
+            /// - NOTE: `concurrentPerform` internally takes care of scheduling work concurrently across available cores.
+            ///         So we dont need to batch the work
+            DispatchQueue.concurrentPerform(iterations: totalPixels) { iteration in
+                colors[iteration] = UIColor(
+                    hue: CGFloat(arc4random_uniform(100)) / 100,
+                    saturation: 1,
+                    brightness: 1,
+                    alpha: 1
+                )
+            }
+            
+            let renderer = UIGraphicsImageRenderer(size: size)
+            let image = renderer.image { context in
+                (0..<width).forEach { x in
+                    (0..<height).forEach { y in
+                        let index = width * y + x
+                        let newColor = colors[index]
+                        newColor.setFill()
+                        let newBounds = CGRect(x: x, y: y, width: 1, height: 1)
+                        context.fill(newBounds)
                     }
                 }
             }
-            group.leave()
+            completion(image)
         }
-
-        group.wait()
-
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let image = renderer.image { context in
-            (0..<width).forEach { x in
-                (0..<height).forEach { y in
-                    let index = width * y + x
-                    let newColor = colors[index]
-                    newColor.setFill()
-                    let newBounds = CGRect(x: x, y: y, width: 1, height: 1)
-                    context.fill(newBounds)
-                }
-            }
-        }
-        return image
     }
     
     // MARK: UI Actions
@@ -359,16 +363,17 @@ class AssetGridViewController: UICollectionViewController {
     @IBAction func addAsset(_ sender: AnyObject?) {
         // Create a dummy image of a random solid color and random orientation.
         // Add the asset to the photo library.
-        let image = generateImage()
-        PHPhotoLibrary.shared().performChanges({
-            let creationRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
-            if let assetCollection = self.dataSource.assetCollection {
-                let addAssetRequest = PHAssetCollectionChangeRequest(for: assetCollection)
-                addAssetRequest?.addAssets([creationRequest.placeholderForCreatedAsset!] as NSArray)
-            }
-        }, completionHandler: {success, error in
-            if !success { print("Error creating the asset: \(String(describing: error))") }
-        })
+        generateImage { [weak self] image in
+            PHPhotoLibrary.shared().performChanges({
+                let creationRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
+                if let assetCollection = self?.dataSource.assetCollection {
+                    let addAssetRequest = PHAssetCollectionChangeRequest(for: assetCollection)
+                    addAssetRequest?.addAssets([creationRequest.placeholderForCreatedAsset!] as NSArray)
+                }
+            }, completionHandler: {success, error in
+                if !success { print("Error creating the asset: \(String(describing: error))") }
+            })
+        }
     }
 
 
