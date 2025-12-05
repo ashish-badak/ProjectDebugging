@@ -17,7 +17,11 @@ class AssetDataSource : NSObject {
     let imageManager = PHCachingImageManager()
     var fetchResult: PHFetchResult<PHAsset>!
     var assetCollection: PHAssetCollection!
-    var controller: AssetGridViewController!
+    
+    /// - NOTE: Ideally we should adopt delegate pattern with protocols to avoid adding concrete type
+    ///         As this statement is forming parent - child relationship between `AssetGridViewController` and `AssetDataSource`;
+    ///         We should mark these as weak.
+    weak var controller: AssetGridViewController!
 
     init(fetchResult: PHFetchResult<PHAsset>? = nil, controller: AssetGridViewController, assetCollection: PHAssetCollection? = nil) {
         self.fetchResult = fetchResult
@@ -169,11 +173,13 @@ class AssetGridViewController: UICollectionViewController {
         PHPhotoLibrary.shared().register(dataSource)
 
         // Verify that all the user saw all the pictures
-        if let dataSource = self.dataSource {
-            completionHandler = { images in
-                if dataSource.fetchResult.count == images.count {
-                    print("Successfully seen all assets")
-                }
+
+        /// - NOTE: `completionHandler` is unused so it can be removed if this is was production ready application.
+        ///         Keeping it here to demonstrate change made to fix the issue
+        completionHandler = { [weak self] images in
+            /// - NOTE: Capturing self as `weak` to avoid reference count increase and cyclic reference
+            if self?.dataSource.fetchResult.count == images.count {
+                print("Successfully seen all assets")
             }
         }
 
