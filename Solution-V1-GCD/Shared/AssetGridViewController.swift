@@ -262,11 +262,6 @@ class AssetGridViewController: UICollectionViewController {
         let visibleRect = CGRect(origin: collectionView!.contentOffset, size: collectionView!.bounds.size)
         let preheatRect = visibleRect.insetBy(dx: 0, dy: -0.5 * visibleRect.height)
 
-        // Preload next rect area
-        if (preheatRect != .zero) {
-            preloadIfNeeded()
-        }
-
         // Update only if the visible area is significantly different from the last preheated area.
         let delta = abs(preheatRect.midY - previousPreheatRect.midY)
         guard delta > view.bounds.height / 3 else { return }
