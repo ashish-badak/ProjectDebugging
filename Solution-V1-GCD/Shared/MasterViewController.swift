@@ -26,7 +26,6 @@ class MasterViewController: UITableViewController {
     var smartAlbums: PHFetchResult<PHAssetCollection>!
     var userCollections: PHFetchResult<PHCollection>!
     let sectionLocalizedTitles = ["", NSLocalizedString("Smart Albums", comment: ""), NSLocalizedString("Albums", comment: "")]
-    let smartAlbumsPointer = UnsafeMutablePointer<PHFetchResult<PHAssetCollection>>(bitPattern: 0x42)!
 
     // MARK: UIViewController / Life Cycle
     
@@ -42,7 +41,7 @@ class MasterViewController: UITableViewController {
         allPhotos = PHAsset.fetchAssets(with: allPhotosOptions)
         smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .albumRegular, options: nil)
         userCollections = PHCollectionList.fetchTopLevelUserCollections(with: nil)
-        smartAlbums = smartAlbumsPointer.pointee
+        
         PHPhotoLibrary.shared().register(self)
     }
     
