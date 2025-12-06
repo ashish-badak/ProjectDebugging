@@ -1,6 +1,7 @@
 import UIKit
 import Photos
 import PhotosUI
+import CoreGraphics
 
 private extension UICollectionView {
     func indexPathsForElements(in rect: CGRect) -> [IndexPath] {
@@ -311,45 +312,49 @@ class AssetGridViewController: UICollectionViewController {
         }
     }
 
-    func generateImage(completion: @escaping (UIImage) -> Void) {
+    func generateImage(completion: @escaping (UIImage?) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
-            let size = (arc4random_uniform(2) == 0) ? CGSize(width: 400, height: 300) : CGSize(width: 300, height: 400)
+            let (width, height): (Int, Int) = arc4random_uniform(2) == 0 ? (400, 300): (300, 400)
+            let colorCount = 100
+            var colors: [UInt32] = Array(repeating: 0, count: colorCount)
             
-            let width: Int = Int(size.width)
-            let height: Int = Int(size.height)
-            let iterations = 100
-            
-            /// - NOTE: We can further optimise image generation by:
-            ///         1. Generating colors only once and cache them to be reused across image generation
-            
-            /// - NOTE: Pre-filled and initialised array allows us to concurrently update each position without worring about thread safety
-            var colors: [UIColor] = Array(repeating: .clear, count: 100)
-            
-            /// - NOTE: `concurrentPerform` internally takes care of scheduling work concurrently across available cores.
-            ///         So we dont need to batch the work
-            DispatchQueue.concurrentPerform(iterations: iterations) { iteration in
+            DispatchQueue.concurrentPerform(iterations: colorCount) { iteration in
                 colors[iteration] = UIColor(
-                    hue: CGFloat(iteration) / CGFloat(iterations),
+                    hue: CGFloat(iteration) / CGFloat(colorCount),
                     saturation: 1,
                     brightness: 1,
                     alpha: 1
-                )
+                ).argb32
             }
             
-            /// - NOTE: This still takes `>300ms`
-            // - TODO: Find way to optimise this further
-            let renderer = UIGraphicsImageRenderer(size: size)
-            let image = renderer.image { context in
-                (0..<width).forEach { x in
-                    (0..<height).forEach { y in
-                        let newColor = colors.randomElement() ?? .black
-                        newColor.setFill()
-                        let newBounds = CGRect(x: x, y: y, width: 1, height: 1)
-                        context.fill(newBounds)
-                    }
-                }
+            /// - Reference:
+            /// Creating a Bitmap Graphics Context: https://developer.apple.com/library/archive/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/dq_context/dq_context.html#//apple_ref/doc/uid/TP30001066-CH203-CJBHBFFE
+            ///
+            /// Bitmap Images:  https://developer.apple.com/library/archive/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/dq_images/dq_images.html
+            ///
+            let pixelsCount = width * height
+            let bitmapData = UnsafeMutablePointer<UInt32>.allocate(capacity: pixelsCount)
+            defer { bitmapData.deallocate() }
+            
+            for i in 0..<pixelsCount {
+                bitmapData[i] = colors[Int(arc4random_uniform(UInt32(colorCount)))]
             }
-            completion(image)
+                        
+            let context = CGContext(
+                data: bitmapData,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+            )
+            
+            if let cgImage = context?.makeImage() {
+                completion(UIImage(cgImage: cgImage))
+            } else {
+                completion(nil)
+            }
         }
     }
     
@@ -359,6 +364,8 @@ class AssetGridViewController: UICollectionViewController {
         // Create a dummy image of a random solid color and random orientation.
         // Add the asset to the photo library.
         generateImage { [weak self] image in
+            guard let image else { return }
+            
             PHPhotoLibrary.shared().performChanges({
                 let creationRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
                 if let assetCollection = self?.dataSource.assetCollection {
@@ -369,5 +376,26 @@ class AssetGridViewController: UICollectionViewController {
                 if !success { print("Error creating the asset: \(String(describing: error))") }
             })
         }
+    }
+}
+
+extension UIColor {
+    /// Little Endian compliant "ARGB" color representation
+    /// - References:
+    ///     1. Color Spaces: https://developer.apple.com/library/archive/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/dq_color/dq_color.html
+    ///
+    var argb32: UInt32 {
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+        getRed(&r, green: &g, blue: &b, alpha: &a)
+
+        let r8 = UInt32(r * 255)
+        let g8 = UInt32(g * 255)
+        let b8 = UInt32(b * 255)
+        let a8 = UInt32(a * 255)
+
+        return (b8 << 24) | (g8 << 16) | (r8 << 8) | a8
     }
 }
