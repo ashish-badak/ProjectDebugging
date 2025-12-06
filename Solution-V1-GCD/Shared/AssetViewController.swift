@@ -92,6 +92,7 @@ class AssetViewController: UIViewController {
         super.viewWillDisappear(animated)
         #if os(iOS)
         navigationController?.hidesBarsOnTap = false
+        navigationController?.isToolbarHidden = true
         #endif
     }
     
