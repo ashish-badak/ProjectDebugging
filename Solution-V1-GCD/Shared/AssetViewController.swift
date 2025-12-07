@@ -141,8 +141,12 @@ class AssetViewController: UIViewController {
     /// - Tag: PlayVideo
     @IBAction func play(_ sender: AnyObject) {
         if playerLayer != nil {
-            // The app already created an AVPlayerLayer, so tell it to play.
-            playerLayer.player!.play()
+            /// - NOTE:
+            ///     1. Just allowing video to be played from start for this assignment
+            ///     2. We can handle player controls like play-pause as gracefully as per requirement.
+            
+            playerLayer.player?.seek(to: .zero)
+            playerLayer.player?.play()
         } else {
             let options = PHVideoRequestOptions()
             options.isNetworkAccessAllowed = true
