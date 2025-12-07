@@ -87,9 +87,9 @@ extension AssetDataSource: PHPhotoLibraryChangeObserver {
         // Change notifications may originate from a background queue.
         // As such, re-dispatch execution to the main queue before acting
         // on the change, so you can update the UI.
-        DispatchQueue.main.sync {
+        DispatchQueue.main.async {
             // Hang on to the new fetch result.
-            fetchResult = changes.fetchResultAfterChanges
+            self.fetchResult = changes.fetchResultAfterChanges
             // If we have incremental changes, animate them in the collection view.
             guard let collectionView = self.controller?.collectionView else { fatalError() }
             if changes.hasIncrementalChanges {
@@ -119,7 +119,7 @@ extension AssetDataSource: PHPhotoLibraryChangeObserver {
                 // Reload the collection view if incremental changes are not available.
                 collectionView.reloadData()
             }
-            controller?.resetCachedAssets()
+            self.controller?.resetCachedAssets()
         }
     }
 }

@@ -150,14 +150,14 @@ class AssetViewController: UIViewController {
             options.progressHandler = { progress, _, _, _ in
                 // The handler may originate on a background queue, so
                 // re-dispatch to the main queue for UI work.
-                DispatchQueue.main.sync {
+                DispatchQueue.main.async {
                     self.progressView.progress = Float(progress)
                 }
             }
             // Request an AVPlayerItem for the displayed PHAsset.
             // Then configure a layer for playing it.
             PHImageManager.default().requestPlayerItem(forVideo: asset, options: options, resultHandler: { playerItem, info in
-                DispatchQueue.main.sync {
+                DispatchQueue.main.async {
                     guard self.playerLayer == nil else { return }
                     
                     // Create an AVPlayer and AVPlayerLayer with the AVPlayerItem.
@@ -182,7 +182,7 @@ class AssetViewController: UIViewController {
         let completion = { (success: Bool, error: Error?) -> Void in
             if success {
                 PHPhotoLibrary.shared().unregisterChangeObserver(self)
-                DispatchQueue.main.sync {
+                DispatchQueue.main.async {
                     _ = self.navigationController!.popViewController(animated: true)
                 }
             } else {
@@ -239,7 +239,7 @@ class AssetViewController: UIViewController {
         options.progressHandler = { progress, _, _, _ in
             // The handler may originate on a background queue, so
             // re-dispatch to the main queue for UI work.
-            DispatchQueue.main.sync {
+            DispatchQueue.main.async {
                 self.progressView.progress = Float(progress)
             }
         }
@@ -274,7 +274,7 @@ class AssetViewController: UIViewController {
         options.progressHandler = { progress, _, _, _ in
             // The handler may originate on a background queue, so
             // re-dispatch to the main queue for UI work.
-            DispatchQueue.main.sync {
+            DispatchQueue.main.async {
                 self.progressView.progress = Float(progress)
             }
         }
@@ -427,7 +427,11 @@ class AssetViewController: UIViewController {
 extension AssetViewController: PHPhotoLibraryChangeObserver {
     func photoLibraryDidChange(_ changeInstance: PHChange) {
         // The call might come on any background queue. Re-dispatch to the main queue to handle it.
-        DispatchQueue.main.sync {
+        DispatchQueue.main.async { [weak self] in
+            /// - NOTE: `weak self` is not mandatory here as closure is short-lived
+            ///         Added it to avoid adding self everywhere in the closure statements below
+            guard let self else { return }
+            
             // Check if there are changes to the displayed asset.
             guard let oldAsset = asset,
                   let details = changeInstance.changeDetails(for: oldAsset)
