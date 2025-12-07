@@ -429,10 +429,21 @@ extension AssetViewController: PHPhotoLibraryChangeObserver {
         // The call might come on any background queue. Re-dispatch to the main queue to handle it.
         DispatchQueue.main.sync {
             // Check if there are changes to the displayed asset.
-            guard let details = changeInstance.changeDetails(for: asset) else { return }
+            guard let oldAsset = asset,
+                  let details = changeInstance.changeDetails(for: oldAsset)
+            else {
+                return
+            }
             
             // Get the updated asset.
             asset = details.objectAfterChanges
+            
+            if asset == nil {
+                /// Asset is not available due to external deletion (outside of the app)
+                /// So popping controller back
+                self.navigationController?.popViewController(animated: true)
+                return
+            }
             
             /// - Bug (Fixed): Favorite status of the asset is not updated correctly
             ///
