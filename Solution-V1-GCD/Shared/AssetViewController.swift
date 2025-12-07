@@ -74,7 +74,7 @@ class AssetViewController: UIViewController {
         // Enable editing buttons if the user can edit the asset.
         editButton.isEnabled = asset.canPerform(.content)
         favoriteButton.isEnabled = asset.canPerform(.properties)
-        favoriteButton.title = asset.isFavorite ? "♥︎" : "♡"
+        updateFavoriteState()
         
         // Enable the trash can button if the user can delete the asset.
         if assetCollection != nil {
@@ -86,6 +86,12 @@ class AssetViewController: UIViewController {
         // Make sure the view layout happens before requesting an image sized to fit the view.
         view.layoutIfNeeded()
         updateImage()
+    }
+    
+    private func updateFavoriteState() {
+        DispatchQueue.main.async {
+            self.favoriteButton.title = self.asset.isFavorite ? "♥︎" : "♡"
+        }
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -203,9 +209,7 @@ class AssetViewController: UIViewController {
             request.isFavorite = !self.asset.isFavorite
         }, completionHandler: { success, error in
             if success {
-                DispatchQueue.main.sync {
-                    sender.title = self.asset.isFavorite ? "♥︎" : "♡"
-                }
+                self.updateFavoriteState()
             } else {
                 print("Can't mark the asset as a Favorite: \(String(describing: error))")
             }
@@ -429,6 +433,12 @@ extension AssetViewController: PHPhotoLibraryChangeObserver {
             
             // Get the updated asset.
             asset = details.objectAfterChanges
+            
+            /// - Bug (Fixed): Favorite status of the asset is not updated correctly
+            ///
+            /// - NOTE: When asset is marked favorite, we need to update it first which is happening on above line
+            ///  Then we can update state so that it reflects favorite state properly.
+            updateFavoriteState()
             
             // If the asset's content changes, update the image and stop any video playback.
             if details.assetContentChanged {
