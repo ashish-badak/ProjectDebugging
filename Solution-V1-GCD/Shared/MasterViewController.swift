@@ -167,7 +167,11 @@ extension MasterViewController: PHPhotoLibraryChangeObserver {
         // Change notifications may originate from a background queue.
         // Re-dispatch to the main queue before acting on the change,
         // so you can update the UI.
-        DispatchQueue.main.sync {
+        DispatchQueue.main.async { [weak self] in
+            /// - NOTE: `weak self` is not mandatory here as closure is short-lived
+            ///         Added it to avoid adding self everywhere in the closure statements below
+            guard let self else { return }
+            
             // Check each of the three top-level fetches for changes.
             if let changeDetails = changeInstance.changeDetails(for: allPhotos) {
                 // Update the cached fetch result.
