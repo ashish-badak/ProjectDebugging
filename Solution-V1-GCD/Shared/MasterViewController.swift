@@ -73,6 +73,14 @@ class MasterViewController: UITableViewController {
                 })
             }
         })
+        
+        /// - NOTE: Allowing to cancel album creation
+        ///
+        /// Earlier if you tapped to add album, then you either had to create new album or kill the app
+        alertController.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in
+            /// - NOTE: Since we don't want any action to be performed on alert cancellation; we did not put any code here
+            ///         It simply dismisses the alert.
+        })
         self.present(alertController, animated: true, completion: nil)
     }
     
