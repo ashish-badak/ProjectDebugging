@@ -22,9 +22,20 @@ class AssetDataSource : NSObject {
     /// - NOTE: Ideally we should adopt delegate pattern with protocols to avoid adding concrete type
     ///         As this statement is forming parent - child relationship between `AssetGridViewController` and `AssetDataSource`;
     ///         We should mark these as weak.
-    weak var controller: AssetGridViewController!
+    ///
+    ///         Similarly, we can avoid force unwraps across the given project to avoid accidental crashes. More graceful handling can be implemented with:
+    ///         1. `guard` statements
+    ///         2. `if let` statements
+    ///         3. Fallbacks with default values wherever applicable
+    ///         4. Error reporting / logging
+    ///         5. Or crash if there is no recoverable state possible (worst and last option to avail)
+    weak var controller: AssetGridViewController?
 
-    init(fetchResult: PHFetchResult<PHAsset>? = nil, controller: AssetGridViewController, assetCollection: PHAssetCollection? = nil) {
+    init(
+        fetchResult: PHFetchResult<PHAsset>? = nil,
+        controller: AssetGridViewController? = nil,
+        assetCollection: PHAssetCollection? = nil
+    ) {
         self.fetchResult = fetchResult
         self.controller = controller
         self.assetCollection = assetCollection
@@ -49,11 +60,13 @@ class AssetDataSource : NSObject {
     }
 
     func updateCache(addedRects: [CGRect], removedRects: [CGRect], targetSize: CGSize, contentMode: PHImageContentMode) {
+        /// - NOTE: Since we have made contoller weak and optional (earlier we force unwrapped it); we need a guard statment to safely unwrap it
+        guard let collectionView = controller?.collectionView else { return }
         let addedAssets = addedRects
-            .flatMap { rect in controller.collectionView!.indexPathsForElements(in: rect) }
+            .flatMap { rect in collectionView.indexPathsForElements(in: rect) }
             .map { indexPath in asset(at: indexPath.item) }
         let removedAssets = removedRects
-            .flatMap { rect in controller.collectionView!.indexPathsForElements(in: rect) }
+            .flatMap { rect in collectionView.indexPathsForElements(in: rect) }
             .map { indexPath in asset(at: indexPath.item) }
 
         // Update the assets the PHCachingImageManager is caching.
@@ -78,9 +91,13 @@ extension AssetDataSource: PHPhotoLibraryChangeObserver {
             // Hang on to the new fetch result.
             fetchResult = changes.fetchResultAfterChanges
             // If we have incremental changes, animate them in the collection view.
-            guard let collectionView = self.controller.collectionView else { fatalError() }
+            guard let collectionView = self.controller?.collectionView else { fatalError() }
             if changes.hasIncrementalChanges {
                 // Handle removals, insertions, and moves in a batch update.
+                
+                /// - NOTE: Earlier `collectionView.performBatchUpdates` was not working to reflect updates happened externally;
+                ///         As we were resetting `dataSource` object inside controller on view appearance / dissappearance.
+                ///         It is fixed by creating `dataSource` only once once controller loads.
                 collectionView.performBatchUpdates({
                     if let removed = changes.removedIndexes, !removed.isEmpty {
                         collectionView.deleteItems(at: removed.map({ IndexPath(item: $0, section: 0) }))
@@ -102,7 +119,7 @@ extension AssetDataSource: PHPhotoLibraryChangeObserver {
                 // Reload the collection view if incremental changes are not available.
                 collectionView.reloadData()
             }
-            controller.resetCachedAssets()
+            controller?.resetCachedAssets()
         }
     }
 }
@@ -113,9 +130,18 @@ class AssetGridViewController: UICollectionViewController {
 
     var availableWidth: CGFloat = 0
     var completionHandler: AssetGridViewControllerHandler?
-    lazy var dataSource: AssetDataSource! = {
-        AssetDataSource(controller: self)
-    }()
+    
+    /// - NOTE:
+    ///     - Earlier we we were creating `dataSource` in `viewWillAppear`; which is invoked everytime view controller appears or (re-appears) on screen
+    ///     - As we were resetting the data source object everytime; we were not able to perform batched updates when:
+    ///         1. Asset was deleted from `AssetViewController`
+    ///         2. Asset was edited - no immediate update on `AssetGridViewController`
+    ///     - It was ulitmately causing crash inside `AssetDataSource.photoLibraryDidChange(:)` since new data source object meant mismatch in fetch request changes
+    ///     - This resulted us giving back empty `changes.removedIndexes` and other updates were also missing.
+    ///
+    ///     - Ideally `dataSource` can be injected as a dependency into the controller in production level code with proper dependency injection system in place
+    ///     - And more code restructuring can be done as per needed to make overall code more modular and unit testable.
+    lazy var dataSource: AssetDataSource = AssetDataSource()
 
     @IBOutlet var addButtonItem: UIBarButtonItem!
     @IBOutlet weak var collectionViewFlowLayout: UICollectionViewFlowLayout!
@@ -127,20 +153,33 @@ class AssetGridViewController: UICollectionViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        let allPhotosOptions = PHFetchOptions()
+        allPhotosOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
+        let fetchResult = PHAsset.fetchAssets(with: allPhotosOptions)
+        
+        /// - NOTE:
+        ///     - Since we are creating data source only once now; passing properties just like we configure delegate objects in deelgate pattern
+        ///     - Ideally we would adopt delegate pattern along with protocols instead of having controller instance directly added to data source
+        dataSource.fetchResult = fetchResult
+        dataSource.controller = self
+        
+        /// - NOTE: Since we are creating data source only once we register it only once as well
+        PHPhotoLibrary.shared().register(dataSource)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        PHPhotoLibrary.shared().unregisterChangeObserver(dataSource)
     }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         resetCachedAssets()
-        dataSource = nil
     }
 
     deinit {
+        /// - NOTE: Since we are creating data source only once we deregister it only once as well
+        PHPhotoLibrary.shared().unregisterChangeObserver(dataSource)
         print("Successfully deinit")
     }
     
@@ -158,17 +197,6 @@ class AssetGridViewController: UICollectionViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Reaching this point without a segue means that this AssetGridViewController
-        // became visible at app launch. As such, match the behavior of the segue from
-        // the default "All Photos" view.
-        if dataSource == nil {
-            let allPhotosOptions = PHFetchOptions()
-            allPhotosOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
-            let fetchResult = PHAsset.fetchAssets(with: allPhotosOptions)
-            dataSource = .init(fetchResult: fetchResult, controller: self)
-        }
-
-        PHPhotoLibrary.shared().register(dataSource)
 
         // Verify that all the user saw all the pictures
 
