@@ -154,14 +154,18 @@ class AssetGridViewController: UICollectionViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let allPhotosOptions = PHFetchOptions()
-        allPhotosOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
-        let fetchResult = PHAsset.fetchAssets(with: allPhotosOptions)
+        if dataSource.fetchResult == nil {
+            /// We are passing fetchResult from `MasterViewController`; so preserving and adopting original check here
+            let allPhotosOptions = PHFetchOptions()
+            allPhotosOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
+            let fetchResult = PHAsset.fetchAssets(with: allPhotosOptions)
+            
+            dataSource.fetchResult = fetchResult
+        }
         
         /// - NOTE:
         ///     - Since we are creating data source only once now; passing properties just like we configure delegate objects in deelgate pattern
         ///     - Ideally we would adopt delegate pattern along with protocols instead of having controller instance directly added to data source
-        dataSource.fetchResult = fetchResult
         dataSource.controller = self
         
         /// - NOTE: Since we are creating data source only once we register it only once as well
