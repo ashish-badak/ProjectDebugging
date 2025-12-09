@@ -55,7 +55,7 @@ Here, I am listing some issues with original code and fixes made.
 6. [Check Commit](https://github.com/ashish-badak/ProjectDebugging/commit/f1fbd6486a895de9143f7737b4eafbfe65889d31)
 
 
-## 6. Scroll Performance
+## 6. Scroll Performance (Updated in point 16)
 ### Issue:
 1. Inside `AssetGridViewController.viewDidAppear()`, original code was trynig to invoke `CADisplayLink`.
 2. This acts as a timer and invoked per frame; resulting in a call to `iterateThroughVisibleRect()` per frame.
@@ -149,7 +149,7 @@ Here, I am listing some issues with original code and fixes made.
 ### Fix:
 1. Updated that call to be as `DispatchQueue.main.async`.
 2. Also updated all other similar calls to async counterparts of the same.
-4. [Check Commit](https://github.com/ashish-badak/ProjectDebugging/commit/a27c575d7e048ab0ff8930d0b3938027d2ccee1f)
+3. [Check Commit](https://github.com/ashish-badak/ProjectDebugging/commit/a27c575d7e048ab0ff8930d0b3938027d2ccee1f)
 
 
 ## 15. Video was not playing second time
@@ -158,10 +158,32 @@ Here, I am listing some issues with original code and fixes made.
 2. This was happening as we were using same player and it was not resetted back to start of the video before playing again.
 ### Fix:
 1. Added a call to seek the video to start when video is being tried to play again.
-4. [Check Commit](https://github.com/ashish-badak/ProjectDebugging/commit/ab1a26da3662c7bae49f3398a8258ce0c9e5bf24)
+2. [Check Commit](https://github.com/ashish-badak/ProjectDebugging/commit/ab1a26da3662c7bae49f3398a8258ce0c9e5bf24)
 > [!Note]
 > Just added a play functionality. In actual scenarios, more graceful handling can be added for the real player with seek, pause, etc.
 
+## 16. Scroll Performance
+### Issue:
+1. `GridViewCell` was configuring shadow inside configure(image:) function
+2. This function is called every time `collectionView`'s `cellForRow` method is invoked.
+3. This was causing scroll perfornce degradation. Confirmed this with Instruments and could see hangs while scrolling fast.
+### Fix:
+1. Moved shadow creation to `awakeFromNib()` - generating only once.
+2. Also rasterised it so it increases performance.
+3. Also made some adjustments to make shadow look more subtle.
+4. [Check Commit](https://github.com/ashish-badak/ProjectDebugging/commit/a782c23f527a846e77e6a31746722d170c505646)
+
+## 17. Live photo badge
+### Issue:
+1. Inside `collectionView`'s `cellForRow` method, new live image was assigned whenever live asset was loaded.
+### Fix:
+1. Declared a static variable with live phot badge inside `GridViewCell`.
+2. Now, instead of making `liveBadgeImageView` nil and assigning it again; just toggling visibility.
+4. [Check Commit](https://github.com/ashish-badak/ProjectDebugging/commit/483cc7c63b2081c80fe8374754f61457dbe39aeb)
+
+## 18. Unused variable cleanup
+1. Cleaned unused variable from cell view
+2. [Check Commit](https://github.com/ashish-badak/ProjectDebugging/commit/1755947baef5da779f3391a412ebdf96314f9404)
 
 ## Other observations, and considerations:
 1. Observed force-unwrappings across projects which can be addressed more gracefully with:
@@ -171,3 +193,4 @@ Here, I am listing some issues with original code and fixes made.
 - Crash only if program is in absolutely in unrecoverable state
 2. Follow better coding patterns to add dependency injections, modularity, unit testability. Considering this was assignment around debugging did not address the coding structure.
 3. Did not check `MasterViewController` for issues. Focused on grid and details view for this debugging assignment.
+4. Ideally cell view models can be created whenever data is ready and passed into cell configuration as per requirement; this will help us to make heavy computations only once. This differs as per requirement though.
