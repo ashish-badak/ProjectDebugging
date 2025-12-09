@@ -268,10 +268,10 @@ class AssetGridViewController: UICollectionViewController {
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GridViewCell", for: indexPath) as? GridViewCell
             else { fatalError("Unexpected cell in collection view") }
         
-        // Add a badge to the cell if the PHAsset represents a Live Photo.
-        if asset.mediaSubtypes.contains(.photoLive) {
-            cell.livePhotoBadgeImage = PHLivePhotoView.livePhotoBadgeImage(options: .overContent)
-        }
+        
+        /// - NOTE: Ideally we should create a view modal outside of collection view data source methods.
+        ///         Ideally when data is fetched. We can map it to presentable format and store collection of it.
+        ///         So that we dont need to recreate the state and configurations again and again here.
         
         // Request an image for the asset from the PHCachingImageManager.
         cell.representedAssetIdentifier = asset.localIdentifier
@@ -279,7 +279,7 @@ class AssetGridViewController: UICollectionViewController {
             // UIKit may have recycled this cell by the handler's activation time.
             // Set the cell's thumbnail image only if it's still showing the same asset.
             if cell.representedAssetIdentifier == asset.localIdentifier {
-                cell.configure(image: image)
+                cell.configure(image: image, isLiveImage: asset.mediaSubtypes.contains(.photoLive))
             }
         }
         return cell
