@@ -8,12 +8,6 @@ class GridViewCell: UICollectionViewCell {
     @IBOutlet var livePhotoBadgeImageView: UIImageView!
     
     var representedAssetIdentifier: String!
-    
-    var thumbnailImage: UIImage! {
-        didSet {
-            imageView.image = thumbnailImage
-        }
-    }
 
     override func awakeFromNib() {
         super.awakeFromNib()
