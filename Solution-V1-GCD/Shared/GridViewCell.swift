@@ -3,7 +3,7 @@ import PhotosUI
 
 class GridViewCell: UICollectionViewCell {
     static let livePhotoBadge = PHLivePhotoView.livePhotoBadgeImage(options: .overContent)
-    private static let cornerRadius: CGFloat = 15
+    private static let cornerRadius: CGFloat = 25
 
     @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var livePhotoBadgeImageView: UIImageView!
@@ -32,11 +32,15 @@ class GridViewCell: UICollectionViewCell {
         imageView.clipsToBounds = true
 
         contentView.layer.shadowColor = UIColor.gray.cgColor
-        contentView.layer.shadowRadius = 2
+        contentView.layer.shadowRadius = 4
         contentView.layer.shadowOffset = .zero
         
         /// - NOTE: Instead of giving opacity; we can adjusted color shade in shadowColor
         contentView.layer.shadowOpacity = 1
+        
+        /// - NOTE: Setting it false allows layer's content to be drawn outside of the layer's bounds
+        ///         This allows us to have more shadowRadius and better fading effect
+        layer.masksToBounds = false
         
         /// - NOTE: Core Animation computes shadow path internally if not provided.
         ///         By providing shadow path we help to avoid that computation and make it faster.
