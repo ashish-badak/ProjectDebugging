@@ -101,7 +101,9 @@ class AssetGridViewController: UICollectionViewController {
         thumbnailSize = CGSize(width: cellSize.width * scale, height: cellSize.height * scale)
         
         // Add a button to the navigation bar if the asset collection supports adding content.
-        if dataSource.assetCollection == nil || dataSource.assetCollection.canPerform(.addContent) {
+        /// - NOTE: Earlier `add button` was added even when`dataSource.assetCollection == nil`
+        ///         So adding default falback as `true`
+        if dataSource.assetCollection?.canPerform(.addContent) ?? true {
             navigationItem.rightBarButtonItem = addButtonItem
         } else {
             navigationItem.rightBarButtonItem = nil
