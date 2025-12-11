@@ -34,7 +34,9 @@ class GridViewCell: UICollectionViewCell {
         contentView.layer.shadowColor = UIColor.gray.cgColor
         contentView.layer.shadowRadius = 2
         contentView.layer.shadowOffset = .zero
-        contentView.layer.shadowOpacity = 0.8
+        
+        /// - NOTE: Instead of giving opacity; we can adjusted color shade in shadowColor
+        contentView.layer.shadowOpacity = 1
         
         /// - NOTE: Core Animation computes shadow path internally if not provided.
         ///         By providing shadow path we help to avoid that computation and make it faster.
