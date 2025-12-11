@@ -20,7 +20,7 @@ class AssetDataSource : NSObject {
 
     let imageManager = PHCachingImageManager()
     var fetchResult: PHFetchResult<PHAsset>?
-    var assetCollection: PHAssetCollection!
+    var assetCollection: PHAssetCollection?
     
     /// - NOTE: Ideally we should adopt delegate pattern with protocols to avoid adding concrete type
     ///         As this statement is forming parent - child relationship between `AssetGridViewController` and `AssetDataSource`;
