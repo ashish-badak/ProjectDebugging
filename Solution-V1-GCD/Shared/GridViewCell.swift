@@ -8,7 +8,7 @@ class GridViewCell: UICollectionViewCell {
     @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var livePhotoBadgeImageView: UIImageView!
     
-    var representedAssetIdentifier: String!
+    var representedAssetIdentifier: String?
 
     override func awakeFromNib() {
         super.awakeFromNib()
