@@ -16,10 +16,10 @@ class AssetViewController: UIViewController {
     @IBOutlet var livePhotoPlayButton: UIBarButtonItem!
     #endif
     
-    @IBOutlet var playButton: UIBarButtonItem!
-    @IBOutlet var space: UIBarButtonItem!
-    @IBOutlet var trashButton: UIBarButtonItem!
-    @IBOutlet var favoriteButton: UIBarButtonItem!
+    @IBOutlet weak var playButton: UIBarButtonItem!
+    @IBOutlet weak var space: UIBarButtonItem!
+    @IBOutlet weak var trashButton: UIBarButtonItem!
+    @IBOutlet weak var favoriteButton: UIBarButtonItem!
     
     fileprivate var playerLayer: AVPlayerLayer!
     fileprivate var isPlayingHint = false

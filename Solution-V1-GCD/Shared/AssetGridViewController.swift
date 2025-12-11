@@ -143,7 +143,7 @@ class AssetGridViewController: UICollectionViewController {
     ///     - And more code restructuring can be done as per needed to make overall code more modular and unit testable.
     lazy var dataSource: AssetDataSource = AssetDataSource()
 
-    @IBOutlet var addButtonItem: UIBarButtonItem!
+    @IBOutlet weak var addButtonItem: UIBarButtonItem!
     @IBOutlet weak var collectionViewFlowLayout: UICollectionViewFlowLayout!
 
     fileprivate var thumbnailSize: CGSize!
