@@ -90,7 +90,7 @@ class AssetGridViewController: UICollectionViewController {
         ///         Keeping it here to demonstrate change made to fix the issue
         completionHandler = { [weak self] images in
             /// - NOTE: Capturing self as `weak` to avoid reference count increase and cyclic reference
-            if self?.dataSource.fetchResult.count == images.count {
+            if self?.dataSource.count == images.count {
                 print("Successfully seen all assets")
             }
         }
@@ -145,11 +145,14 @@ class AssetGridViewController: UICollectionViewController {
     }
     /// - Tag: PopulateCell
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let asset = dataSource.asset(at: indexPath.item)
         // Dequeue a GridViewCell.
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GridViewCell", for: indexPath) as? GridViewCell
             else { fatalError("Unexpected cell in collection view") }
         
+        guard let asset = dataSource.asset(at: indexPath.item) else {
+            return cell
+        }
+
         
         /// - NOTE: Ideally we should create a view modal outside of collection view data source methods.
         ///         Ideally when data is fetched. We can map it to presentable format and store collection of it.

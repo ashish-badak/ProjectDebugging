@@ -19,7 +19,7 @@ private extension UICollectionView {
 class AssetDataSource : NSObject {
 
     let imageManager = PHCachingImageManager()
-    var fetchResult: PHFetchResult<PHAsset>!
+    var fetchResult: PHFetchResult<PHAsset>?
     var assetCollection: PHAssetCollection!
     
     /// - NOTE: Ideally we should adopt delegate pattern with protocols to avoid adding concrete type
@@ -45,17 +45,31 @@ class AssetDataSource : NSObject {
     }
 
     var count: Int {
-        get {
-            fetchResult.count
+        fetchResult?.count ?? 0
+    }
+
+    func asset(at index: Int) -> PHAsset? {
+        fetchResult?.object(at: index)
+    }
+
+    func requestImage(
+        at: Int,
+        targetSize: CGSize,
+        contentMode: PHImageContentMode,
+        resultHandler: @escaping (UIImage?, [AnyHashable:Any]?) -> Void
+    ) {
+        guard let asset = asset(at: at) else {
+            resultHandler(nil, nil)
+            return
         }
-    }
-
-    func asset(at index: Int) -> PHAsset {
-        return fetchResult.object(at: index)
-    }
-
-    func requestImage(at: Int, targetSize: CGSize, contentMode: PHImageContentMode, resultHandler: @escaping (UIImage?, [AnyHashable:Any]?) -> Void) {
-        imageManager.requestImage(for: asset(at: at), targetSize: targetSize, contentMode: contentMode, options: nil, resultHandler: resultHandler)
+        
+        imageManager.requestImage(
+            for: asset,
+            targetSize: targetSize,
+            contentMode: contentMode,
+            options: nil,
+            resultHandler: resultHandler
+        )
     }
 
     func resetCache() {
@@ -67,10 +81,10 @@ class AssetDataSource : NSObject {
         guard let collectionView = controller?.collectionView else { return }
         let addedAssets = addedRects
             .flatMap { rect in collectionView.indexPathsForElements(in: rect) }
-            .map { indexPath in asset(at: indexPath.item) }
+            .compactMap { indexPath in asset(at: indexPath.item) }
         let removedAssets = removedRects
             .flatMap { rect in collectionView.indexPathsForElements(in: rect) }
-            .map { indexPath in asset(at: indexPath.item) }
+            .compactMap { indexPath in asset(at: indexPath.item) }
 
         // Update the assets the PHCachingImageManager is caching.
         imageManager.startCachingImages(for: addedAssets,
@@ -84,7 +98,7 @@ class AssetDataSource : NSObject {
 extension AssetDataSource: PHPhotoLibraryChangeObserver {
     func photoLibraryDidChange(_ changeInstance: PHChange) {
 
-        guard let changes = changeInstance.changeDetails(for: fetchResult)
+        guard let fetchResult, let changes = changeInstance.changeDetails(for: fetchResult)
         else { return }
 
         // Change notifications may originate from a background queue.
