@@ -93,6 +93,26 @@ class AssetDataSource : NSObject {
         imageManager.stopCachingImages(for: removedAssets,
                                        targetSize: targetSize, contentMode: contentMode, options: nil)
     }
+    
+    func startCachingImages(for indexPaths: [IndexPath], targetSize: CGSize, contentMode: PHImageContentMode) {
+        let assets = indexPaths.compactMap { asset(at: $0.item) }
+        imageManager.startCachingImages(
+            for: assets,
+            targetSize: targetSize,
+            contentMode: contentMode,
+            options: nil
+        )
+    }
+    
+    func stopCachingImages(for indexPaths: [IndexPath], targetSize: CGSize, contentMode: PHImageContentMode) {
+        let assets = indexPaths.compactMap { asset(at: $0.item) }
+        imageManager.stopCachingImages(
+            for: assets,
+            targetSize: targetSize,
+            contentMode: contentMode,
+            options: nil
+        )
+    }
 }
 
 // MARK: PHPhotoLibraryChangeObserver
