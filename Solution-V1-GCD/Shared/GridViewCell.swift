@@ -12,7 +12,17 @@ class GridViewCell: UICollectionViewCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         
-        
+        setupView()
+        setupShadow()
+    }
+    
+    private func setupView() {
+        /// - NOTE: Live badge is a in a way static image so setting it only once
+        livePhotoBadgeImageView.image = Self.livePhotoBadge
+        livePhotoBadgeImageView.isHidden = true
+    }
+    
+    private func setupShadow() {
         /// - NOTE: There is no need to redraw shadow in `configure(image:)` call
         ///         It gets redrawn everytime cell configuration is invoked
         ///         So moved it here.
@@ -26,9 +36,6 @@ class GridViewCell: UICollectionViewCell {
         contentView.layer.shadowOpacity = 0.8
         contentView.layer.shouldRasterize = true
         contentView.layer.rasterizationScale = UIScreen.main.scale
-        
-        /// - NOTE: Live badge is a in a way stativ image so setting it only once
-        livePhotoBadgeImageView.image = Self.livePhotoBadge
     }
     
     func configure(image: UIImage?, isLiveImage: Bool) {
