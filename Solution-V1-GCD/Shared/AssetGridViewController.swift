@@ -162,12 +162,16 @@ class AssetGridViewController: UICollectionViewController {
         
         // Request an image for the asset from the PHCachingImageManager.
         cell.representedAssetIdentifier = asset.localIdentifier
-        dataSource.requestImage(for: asset, targetSize: thumbnailSize, contentMode: .aspectFill) { image, _ in
+        cell.imageRequestID = dataSource.requestImage(for: asset, targetSize: thumbnailSize, contentMode: .aspectFill) { [weak cell] image, _ in
             // UIKit may have recycled this cell by the handler's activation time.
             // Set the cell's thumbnail image only if it's still showing the same asset.
-            if cell.representedAssetIdentifier == asset.localIdentifier {
-                cell.configure(image: image, isLiveImage: asset.mediaSubtypes.contains(.photoLive))
+            if cell?.representedAssetIdentifier == asset.localIdentifier {
+                cell?.configure(image: image, isLiveImage: asset.mediaSubtypes.contains(.photoLive))
             }
+        }
+
+        cell.onCellReuse = { [weak self] imageRequestID in
+            self?.dataSource.cancelImageRequest(withID: imageRequestID)
         }
         return cell
     }

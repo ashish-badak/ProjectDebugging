@@ -9,6 +9,8 @@ class GridViewCell: UICollectionViewCell {
     @IBOutlet weak var livePhotoBadgeImageView: UIImageView!
     
     var representedAssetIdentifier: String?
+    var imageRequestID: PHImageRequestID?
+    var onCellReuse: ((PHImageRequestID) -> Void)?
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -67,6 +69,11 @@ class GridViewCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        if let imageRequestID {
+            onCellReuse?(imageRequestID)
+            self.imageRequestID = nil
+            onCellReuse = nil
+        }
         imageView.image = nil
         livePhotoBadgeImageView.isHidden = true
     }

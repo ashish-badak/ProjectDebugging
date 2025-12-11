@@ -57,7 +57,7 @@ class AssetDataSource : NSObject {
         targetSize: CGSize,
         contentMode: PHImageContentMode,
         resultHandler: @escaping (UIImage?, [AnyHashable:Any]?) -> Void
-    ) {
+    ) -> PHImageRequestID {
         /// - Note: Since we were already creating asset inside `cellForRowAt` method there was no need to create one here again
         ///         So consuming it here directly
         imageManager.requestImage(
@@ -67,6 +67,10 @@ class AssetDataSource : NSObject {
             options: nil,
             resultHandler: resultHandler
         )
+    }
+    
+    func cancelImageRequest(withID id: PHImageRequestID) {
+        imageManager.cancelImageRequest(id)
     }
 
     func resetCache() {
