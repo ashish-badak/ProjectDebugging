@@ -14,6 +14,7 @@
 		118FE1221CEF0525004F2F51 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 118FE1201CEF0525004F2F51 /* LaunchScreen.storyboard */; };
 		11E1BB9B1CF1371A0057E18F /* GridViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11E1BB9A1CF1371A0057E18F /* GridViewCell.swift */; };
 		11E1BB9E1CF137450057E18F /* AssetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11E1BB9D1CF137450057E18F /* AssetViewController.swift */; };
+		1E1705AB2EEACADE00C79D13 /* AssetDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E1705AA2EEACADE00C79D13 /* AssetDataSource.swift */; };
 		52AD8695299A869B00D1968A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 52AD8694299A869B00D1968A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 		118FE1231CEF0525004F2F51 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		11E1BB9A1CF1371A0057E18F /* GridViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GridViewCell.swift; sourceTree = "<group>"; };
 		11E1BB9D1CF137450057E18F /* AssetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = AssetViewController.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
+		1E1705AA2EEACADE00C79D13 /* AssetDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetDataSource.swift; sourceTree = "<group>"; };
 		52AD8694299A869B00D1968A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = SOURCE_ROOT; };
 		595AD1A071A236344A7705F6 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -76,6 +78,7 @@
 		118FE13C1CEF07EB004F2F51 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				1E1705AA2EEACADE00C79D13 /* AssetDataSource.swift */,
 				118FE1151CEF0525004F2F51 /* AppDelegate.swift */,
 				118FE1191CEF0525004F2F51 /* AssetGridViewController.swift */,
 				11E1BB9D1CF137450057E18F /* AssetViewController.swift */,
@@ -177,6 +180,7 @@
 				11E1BB9E1CF137450057E18F /* AssetViewController.swift in Sources */,
 				11E1BB9B1CF1371A0057E18F /* GridViewCell.swift in Sources */,
 				118FE11A1CEF0525004F2F51 /* AssetGridViewController.swift in Sources */,
+				1E1705AB2EEACADE00C79D13 /* AssetDataSource.swift in Sources */,
 				118FE1181CEF0525004F2F51 /* MasterViewController.swift in Sources */,
 				118FE1161CEF0525004F2F51 /* AppDelegate.swift in Sources */,
 			);
