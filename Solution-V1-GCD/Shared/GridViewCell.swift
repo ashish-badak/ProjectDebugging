@@ -12,52 +12,51 @@ class GridViewCell: UICollectionViewCell {
     var imageRequestID: PHImageRequestID?
     var onCellReuse: ((PHImageRequestID) -> Void)?
 
+    private lazy var shadowLayer: CALayer = {
+        let layer = CALayer()
+        layer.shadowColor = UIColor.gray.cgColor
+        layer.shadowRadius = 4
+        layer.shadowOffset = .zero
+        layer.shadowOpacity = 0.5
+        layer.shouldRasterize = true
+        layer.rasterizationScale = UIScreen.main.scale
+        return layer
+    }()
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         
         setupView()
-        setupShadow()
     }
     
     private func setupView() {
         /// - NOTE: Live badge is a in a way static image so setting it only once
         livePhotoBadgeImageView.image = Self.livePhotoBadge
         livePhotoBadgeImageView.isHidden = true
-    }
-    
-    private func setupShadow() {
+        
         /// - NOTE: There is no need to redraw shadow in `configure(image:)` call
         ///         It gets redrawn everytime cell configuration is invoked
         ///         So moved it here.
         ///         Also, adjusted some shadow params to drop visually appealing shadow.
         imageView.layer.cornerRadius = Self.cornerRadius
         imageView.clipsToBounds = true
-
-        contentView.layer.shadowColor = UIColor.gray.cgColor
-        contentView.layer.shadowRadius = 4
-        contentView.layer.shadowOffset = .zero
-        
-        /// - NOTE: Instead of giving opacity; we can adjusted color shade in shadowColor
-        contentView.layer.shadowOpacity = 1
         
         /// - NOTE: Setting it false allows layer's content to be drawn outside of the layer's bounds
         ///         This allows us to have more shadowRadius and better fading effect
         layer.masksToBounds = false
+        layer.insertSublayer(shadowLayer, at: 0)
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
         
-        /// - NOTE: Core Animation computes shadow path internally if not provided.
-        ///         By providing shadow path we help to avoid that computation and make it faster.
-        ///         In example project, cell size is fixed so confiruing `shadowPath` here inside `awakeFromNib()`
-        ///         Else we should do it inside `layoutSubviews()`
-        /// Reference: - https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/ImprovingAnimationPerformance/ImprovingAnimationPerformance.html
-        ///
-        layer.shadowPath = UIBezierPath(
+        if shadowLayer.frame == bounds { return }
+        
+        shadowLayer.frame = bounds
+        shadowLayer.shadowPath = UIBezierPath(
             roundedRect: bounds,
             cornerRadius: Self.cornerRadius
         ).cgPath
-        
-        /// - NOTE: Rasterization helps to cache bitmap and avoids recomputation
-        contentView.layer.shouldRasterize = true
-        contentView.layer.rasterizationScale = UIScreen.main.scale
     }
     
     func configure(image: UIImage?, isLiveImage: Bool) {
