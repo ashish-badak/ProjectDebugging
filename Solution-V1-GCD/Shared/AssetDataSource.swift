@@ -53,16 +53,13 @@ class AssetDataSource : NSObject {
     }
 
     func requestImage(
-        at: Int,
+        for asset: PHAsset,
         targetSize: CGSize,
         contentMode: PHImageContentMode,
         resultHandler: @escaping (UIImage?, [AnyHashable:Any]?) -> Void
     ) {
-        guard let asset = asset(at: at) else {
-            resultHandler(nil, nil)
-            return
-        }
-        
+        /// - Note: Since we were already creating asset inside `cellForRowAt` method there was no need to create one here again
+        ///         So consuming it here directly
         imageManager.requestImage(
             for: asset,
             targetSize: targetSize,
