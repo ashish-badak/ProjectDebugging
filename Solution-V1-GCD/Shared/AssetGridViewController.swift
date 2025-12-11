@@ -54,33 +54,6 @@ class AssetGridViewController: UICollectionViewController {
         PHPhotoLibrary.shared().register(dataSource)
     }
     
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-    }
-
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        resetCachedAssets()
-    }
-
-    deinit {
-        /// - NOTE: Since we are creating data source only once we deregister it only once as well
-        PHPhotoLibrary.shared().unregisterChangeObserver(dataSource)
-        print("Successfully deinit")
-    }
-    
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
-        let width = view.bounds.inset(by: view.safeAreaInsets).width
-        // Adjust the item size if the available width has changed.
-        if availableWidth != width {
-            availableWidth = width
-            let columnCount = (availableWidth / 80).rounded(.towardZero)
-            let itemLength = (availableWidth - columnCount - 1) / columnCount
-            collectionViewFlowLayout.itemSize = CGSize(width: itemLength, height: itemLength)
-        }
-    }
-    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
@@ -110,8 +83,16 @@ class AssetGridViewController: UICollectionViewController {
         }
     }
     
-    fileprivate func preloadIfNeeded() {
-        updateCachedAssets()
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        let width = view.bounds.inset(by: view.safeAreaInsets).width
+        // Adjust the item size if the available width has changed.
+        if availableWidth != width {
+            availableWidth = width
+            let columnCount = (availableWidth / 80).rounded(.towardZero)
+            let itemLength = (availableWidth - columnCount - 1) / columnCount
+            collectionViewFlowLayout.itemSize = CGSize(width: itemLength, height: itemLength)
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -129,6 +110,21 @@ class AssetGridViewController: UICollectionViewController {
         ///
         ///         `iterateThroughVisibleRect` was also doing heavy computing work which was not necessary
         ///
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        resetCachedAssets()
+    }
+
+    deinit {
+        /// - NOTE: Since we are creating data source only once we deregister it only once as well
+        PHPhotoLibrary.shared().unregisterChangeObserver(dataSource)
+        print("Successfully deinit")
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -183,6 +179,10 @@ class AssetGridViewController: UICollectionViewController {
     }
     
     // MARK: Asset Caching
+    
+    fileprivate func preloadIfNeeded() {
+        updateCachedAssets()
+    }
     
     func resetCachedAssets() {
         dataSource.resetCache()
