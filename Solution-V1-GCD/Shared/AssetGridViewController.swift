@@ -29,7 +29,6 @@ class AssetGridViewController: UICollectionViewController {
     @IBOutlet weak var collectionViewFlowLayout: UICollectionViewFlowLayout!
 
     fileprivate var thumbnailSize: CGSize!
-    fileprivate var previousPreheatRect = CGRect.zero
     
     // MARK: UIViewController / Life Cycle
     
@@ -52,6 +51,12 @@ class AssetGridViewController: UICollectionViewController {
         
         /// - NOTE: Since we are creating data source only once we register it only once as well
         PHPhotoLibrary.shared().register(dataSource)
+        
+        
+        /// - NOTE: Collection view prefetching provides us oppotunity to load content in advance
+        ///         This helps us to achieve smooth scrolling without needing to preheat and cache which we were doing previously
+        ///         So removed that code
+        collectionView.prefetchDataSource = self
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -97,7 +102,6 @@ class AssetGridViewController: UICollectionViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        preloadIfNeeded()
 
         /// - NOTE: This code was making `iterateThroughVisibleRect` to be executed every frame which is not needed
         ///         This results in blocking main thread and increasing CPU load.
@@ -172,67 +176,8 @@ class AssetGridViewController: UICollectionViewController {
         return cell
     }
     
-    // MARK: UIScrollView
-
-    override func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        updateCachedAssets()
-    }
-    
-    // MARK: Asset Caching
-    
-    fileprivate func preloadIfNeeded() {
-        updateCachedAssets()
-    }
-    
     func resetCachedAssets() {
         dataSource.resetCache()
-        previousPreheatRect = .zero
-    }
-    
-    /// - Tag: UpdateAssets
-    fileprivate func updateCachedAssets() {
-        // Update only if the view is visible.
-        guard isViewLoaded && view.window != nil else { return }
-        
-        // The window you prepare ahead of time is twice the height of the visible rect.
-        let visibleRect = CGRect(origin: collectionView!.contentOffset, size: collectionView!.bounds.size)
-        let preheatRect = visibleRect.insetBy(dx: 0, dy: -0.5 * visibleRect.height)
-
-        // Update only if the visible area is significantly different from the last preheated area.
-        let delta = abs(preheatRect.midY - previousPreheatRect.midY)
-        guard delta > view.bounds.height / 3 else { return }
-        
-        // Compute the assets to start and stop caching.
-        let (addedRects, removedRects) = differencesBetweenRects(previousPreheatRect, preheatRect)
-        dataSource.updateCache(addedRects: addedRects, removedRects: removedRects, targetSize: thumbnailSize, contentMode: .aspectFill)
-        // Store the computed rectangle for future comparison.
-        previousPreheatRect = preheatRect
-    }
-    
-    fileprivate func differencesBetweenRects(_ old: CGRect, _ new: CGRect) -> (added: [CGRect], removed: [CGRect]) {
-        if old.intersects(new) {
-            var added = [CGRect]()
-            if new.maxY > old.maxY {
-                added += [CGRect(x: new.origin.x, y: old.maxY,
-                                 width: new.width, height: new.maxY - old.maxY)]
-            }
-            if old.minY > new.minY {
-                added += [CGRect(x: new.origin.x, y: new.minY,
-                                 width: new.width, height: old.minY - new.minY)]
-            }
-            var removed = [CGRect]()
-            if new.maxY < old.maxY {
-                removed += [CGRect(x: new.origin.x, y: new.maxY,
-                                   width: new.width, height: old.maxY - new.maxY)]
-            }
-            if old.minY < new.minY {
-                removed += [CGRect(x: new.origin.x, y: old.minY,
-                                   width: new.width, height: new.minY - old.minY)]
-            }
-            return (added, removed)
-        } else {
-            return ([new], [old])
-        }
     }
 
     func generateImage(completion: @escaping (UIImage?) -> Void) {
@@ -299,6 +244,17 @@ class AssetGridViewController: UICollectionViewController {
                 if !success { print("Error creating the asset: \(String(describing: error))") }
             })
         }
+    }
+}
+
+// MARK: UICollectionViewDataSourcePrefetching
+extension AssetGridViewController: UICollectionViewDataSourcePrefetching {
+    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+        dataSource.startCachingImages(for: indexPaths, targetSize: thumbnailSize, contentMode: .aspectFill)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+        dataSource.stopCachingImages(for: indexPaths, targetSize: thumbnailSize, contentMode: .aspectFill)
     }
 }
 
